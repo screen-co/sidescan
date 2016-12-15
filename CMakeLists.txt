@@ -1,7 +1,7 @@
 
 cmake_minimum_required (VERSION 2.6)
 
-project (ame-sidescan)
+project (sidescan)
 
 include (FindPkgConfig)
 
@@ -12,6 +12,7 @@ endif ()
 if (${CMAKE_C_COMPILER_ID} STREQUAL "GNU" OR ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
   set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -O2 -Wall -Wextra -Wno-unused-parameter $ENV{CFLAGS}")
   set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -O1 -Wall -Wextra -Wno-unused-parameter $ENV{CFLAGS}")
+  set (MATH_LIBRARIES m)
 elseif (${CMAKE_C_COMPILER_ID} STREQUAL "MSVC")
   set (CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /wd4244 $ENV{CFLAGS}")
   set (CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /wd4244 $ENV{CFLAGS}")
@@ -43,12 +44,14 @@ add_definitions (${GLIB2_CFLAGS} ${GTK3_CFLAGS})
 link_directories (${GLIB2_LIBRARY_DIRS} ${GTK3_LIBRARY_DIRS})
 
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/sidescan")
+include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../gtkcifroarea/gtkcifroarea")
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscantypes/hyscantypes")
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscandb/hyscandb")
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancache/hyscancache")
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmath/hyscanmath")
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancore/hyscancore")
 include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancontrol/hyscancontrol")
+include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscangui/hyscangui")
 
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscantypes/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscandb/bin")
@@ -56,7 +59,8 @@ link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancache/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmath/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancore/bin")
 link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancontrol/bin")
-set (HYSCAN_LIBRARIES hyscantypes hyscandb hyscancache hyscanmath hyscancore hyscancontrol)
+link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscangui/bin")
+set (HYSCAN_LIBRARIES hyscantypes hyscandb hyscancache hyscanmath hyscancore hyscancontrol hyscangui)
 
 add_definitions (-DG_LOG_DOMAIN="SideScan")
 add_subdirectory ("sidescan")

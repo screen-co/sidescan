@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/hyscan/gtk">
+    <file compressed="true">side-scan.ui</file>
+  </gresource>
+</gresources>

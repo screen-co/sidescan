@@ -16,23 +16,18 @@ all: release
 release:
 	@-${MAKE_DIR} bin
 	@-${MAKE_DIR} build
-	@-${MAKE_DIR} doc/documentation
 	@cd build && cmake -G $(CMAKE_GENERATOR) -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=$(PREFIX) ..
 	@$(MAKE) -C build
 
 debug:
 	@-${MAKE_DIR} bin
 	@-${MAKE_DIR} build
-	@-${MAKE_DIR} doc/documentation
 	@cd build && cmake -G $(CMAKE_GENERATOR) -D CMAKE_BUILD_TYPE=Debug -D CMAKE_INSTALL_PREFIX=$(PREFIX) ..
 	@$(MAKE) -C build
 
 install: release
 	@echo "Performing installation"
 	@$(MAKE) -C build install
-
-doc:
-	@cd doc && doxygen
 
 clean:
 	@echo "Cleaning build directory"
@@ -42,6 +37,3 @@ distclean: clean
 	@echo "Removing build directory"
 	-@${REMOVE_DIR} bin
 	-@${REMOVE_DIR} build
-	-@${REMOVE_DIR} doc/documentation
-
-.PHONY: doc
