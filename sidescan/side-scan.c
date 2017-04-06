@@ -246,9 +246,9 @@ brightness_set (Global  *global,
   if (cur_brightness > 100.0)
     return FALSE;
 
-  black = (cur_brightness / 100.0) * 0.01;
+  black = 0.0;
   gamma = 1.25 - 0.5 * (cur_brightness / 100.0);
-  white = 1.0 - (cur_brightness / 100.0) * 0.98;
+  white = 1.0 - (cur_brightness / 100.0) * 0.99;
 
   hyscan_gtk_waterfall_set_levels (global->wf, black, gamma, white);
 
@@ -438,7 +438,14 @@ static void
 brightness_up (GtkWidget *widget,
                Global    *global)
 {
-  gdouble cur_brightness = global->cur_brightness + 5.0;
+  gdouble cur_brightness;
+
+  if (global->cur_brightness < 50.0)
+    cur_brightness = global->cur_brightness + 10.0;
+  else if (global->cur_brightness < 90.0)
+    cur_brightness = global->cur_brightness + 5.0;
+  else
+    cur_brightness = global->cur_brightness + 1.0;
 
   if (brightness_set (global, cur_brightness))
     global->cur_brightness = cur_brightness;
@@ -448,7 +455,14 @@ static void
 brightness_down (GtkWidget *widget,
                  Global    *global)
 {
-  gdouble cur_brightness = global->cur_brightness - 5.0;
+  gdouble cur_brightness;
+
+  if (global->cur_brightness > 90.0)
+    cur_brightness = global->cur_brightness - 1.0;
+  else if (global->cur_brightness > 50.0)
+    cur_brightness = global->cur_brightness - 5.0;
+  else
+    cur_brightness = global->cur_brightness - 10.0;
 
   if (brightness_set (global, cur_brightness))
     global->cur_brightness = cur_brightness;

@@ -45,6 +45,9 @@ setup_sensors (HyScanSensorControl *control,
           channel = g_key_file_get_integer (config, ports[i], "channel", NULL);
           time_offset = g_key_file_get_int64 (config, ports[i], "time-offset", NULL);
 
+          if (channel == 0)
+            channel = 1;
+
           port_type = hyscan_sensor_control_get_port_type (control, ports[i]);
           uart_devices = hyscan_sensor_control_list_uart_devices (control, ports[i]);
           uart_modes = hyscan_sensor_control_list_uart_modes (control, ports[i]);
@@ -174,6 +177,9 @@ setup_sensors (HyScanSensorControl *control,
           position.psi = g_key_file_get_double (config, ports[i], "position-psi", NULL);
           position.gamma = g_key_file_get_double (config, ports[i], "position-gamma", NULL);
           position.theta = g_key_file_get_double (config, ports[i], "position-theta", NULL);
+          position.psi *= (G_PI / 180.0);
+          position.gamma *= (G_PI / 180.0);
+          position.theta *= (G_PI / 180.0);
           if (!hyscan_sensor_control_set_position (control, ports[i], &position))
             {
               g_message ("can't set position for sensor connected to port '%s'", ports[i]);
