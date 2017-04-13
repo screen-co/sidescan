@@ -221,6 +221,7 @@
         <property name="can_focus">True</property>
         <property name="halign">center</property>
         <property name="valign">center</property>
+        <signal name="state-set" handler="live_view" swapped="no"/>
       </object>
       <packing>
         <property name="left_attach">0</property>

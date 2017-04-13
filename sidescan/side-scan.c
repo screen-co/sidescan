@@ -222,7 +222,7 @@ track_changed (GtkTreeView *list,
                                  global->db, global->project_name, global->track_name,
                                  HYSCAN_TILE_SIDESCAN, TRUE);
 
-      hyscan_gtk_waterfall_automove (global->wf, TRUE);
+      hyscan_gtk_waterfall_control_automove (HYSCAN_GTK_WATERFALL_CONTROL (global->wf), TRUE);
       scale_set (global);
     }
   else
@@ -492,7 +492,7 @@ static void
 scale_up (GtkWidget *widget,
           Global    *global)
 {
-  hyscan_gtk_waterfall_zoom (global->wf, TRUE);
+  hyscan_gtk_waterfall_control_zoom (HYSCAN_GTK_WATERFALL_CONTROL (global->wf), TRUE);
   scale_set (global);
 }
 
@@ -500,7 +500,7 @@ static void
 scale_down (GtkWidget *widget,
             Global    *global)
 {
-  hyscan_gtk_waterfall_zoom (global->wf, FALSE);
+  hyscan_gtk_waterfall_control_zoom (HYSCAN_GTK_WATERFALL_CONTROL (global->wf), FALSE);
   scale_set (global);
 }
 
@@ -512,14 +512,14 @@ live_view (GtkWidget  *widget,
   if (state)
     {
       if (!gtk_switch_get_state (global->live_view))
-        hyscan_gtk_waterfall_automove (global->wf, state);
+        hyscan_gtk_waterfall_control_automove (HYSCAN_GTK_WATERFALL_CONTROL (global->wf), state);
 
       gtk_switch_set_state (global->live_view, TRUE);
     }
   else
     {
       if (gtk_switch_get_state (global->live_view))
-        hyscan_gtk_waterfall_automove (global->wf, state);
+        hyscan_gtk_waterfall_control_automove (HYSCAN_GTK_WATERFALL_CONTROL (global->wf), state);
 
       gtk_switch_set_state (global->live_view, FALSE);
     }
@@ -668,7 +668,7 @@ start_stop (GtkWidget  *widget,
                                      global->db, global->project_name, global->track_name,
                                      HYSCAN_TILE_SIDESCAN, TRUE);
 
-          hyscan_gtk_waterfall_automove (global->wf, TRUE);
+          hyscan_gtk_waterfall_control_automove (HYSCAN_GTK_WATERFALL_CONTROL (global->wf), TRUE);
           scale_set (global);
         }
       else
@@ -1082,7 +1082,8 @@ main (int    argc,
   svp_val.depth = 0.0;
   svp_val.velocity = sound_velocity;
   g_array_insert_val (svp, 0, svp_val);
-  hyscan_gtk_waterfall_set_speeds (global.wf, ship_speed, svp);
+  hyscan_gtk_waterfall_set_ship_speed (global.wf, ship_speed);
+  hyscan_gtk_waterfall_set_sound_velocity (global.wf, svp);
   g_array_unref (svp);
 
   /* Основное окно программы. */
