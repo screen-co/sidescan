@@ -34,7 +34,7 @@ typedef struct
 
   gboolean                             full_screen;
 
-  guint32                            **color_maps;
+  GArray                              *color_maps[MAX_COLOR_MAPS];
   guint                                cur_color_map;
   gdouble                              cur_brightness;
 
@@ -248,7 +248,9 @@ brightness_set (Global  *global,
   white = 1.0 - (cur_brightness / 100.0) * 0.99;
 
   hyscan_gtk_waterfall_drawer_set_levels (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
-                                          black, gamma, white);
+                                          HYSCAN_SOURCE_SIDE_SCAN_STARBOARD, black, gamma, white);
+  hyscan_gtk_waterfall_drawer_set_levels (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
+                                          HYSCAN_SOURCE_SIDE_SCAN_PORT, black, gamma, white);
 
   text = g_strdup_printf ("<small><b>%.0f%%</b></small>", cur_brightness);
   gtk_label_set_markup (global->brightness_value, text);
@@ -287,7 +289,11 @@ color_map_set (Global *global,
     }
 
   hyscan_gtk_waterfall_drawer_set_colormap (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
-                                            global->color_maps[cur_color_map], 256, 0xff000000);
+                                            HYSCAN_SOURCE_SIDE_SCAN_STARBOARD,
+                                            global->color_maps[cur_color_map], 0xff000000);
+  hyscan_gtk_waterfall_drawer_set_colormap (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
+                                            HYSCAN_SOURCE_SIDE_SCAN_PORT,
+                                            global->color_maps[cur_color_map], 0xff000000);
 
   text = g_strdup_printf ("<small><b>%s</b></small>", color_map_name);
   gtk_label_set_markup (global->color_map_value, text);
@@ -493,7 +499,7 @@ static void
 scale_up (GtkWidget *widget,
           Global    *global)
 {
-  hyscan_gtk_waterfall_drawer_zoom (HYSCAN_GTK_WATERFALL_DRAWER (global->wf), TRUE);
+  hyscan_gtk_waterfall_zoom (HYSCAN_GTK_WATERFALL (global->wf), TRUE);
   scale_set (global);
 }
 
@@ -501,7 +507,7 @@ static void
 scale_down (GtkWidget *widget,
             Global    *global)
 {
-  hyscan_gtk_waterfall_drawer_zoom (HYSCAN_GTK_WATERFALL_DRAWER (global->wf), FALSE);
+  hyscan_gtk_waterfall_zoom (HYSCAN_GTK_WATERFALL (global->wf), FALSE);
   scale_set (global);
 }
 
@@ -1075,6 +1081,10 @@ main (int    argc,
   gtk_widget_set_margin_top (GTK_WIDGET (global.wf), 12);
   gtk_widget_set_margin_bottom (GTK_WIDGET (global.wf), 12);
 
+  /* Скорость обновления экрана. */
+  hyscan_gtk_waterfall_drawer_set_automove_period (HYSCAN_GTK_WATERFALL_DRAWER (global.wf), 100000);
+  hyscan_gtk_waterfall_drawer_set_regeneration_period (HYSCAN_GTK_WATERFALL_DRAWER (global.wf), 500000);
+
   /* Устанавливаем скорости движения судна и скорость звука в воде. */
   svp = g_array_new (FALSE, FALSE, sizeof (HyScanSoundVelocity));
   svp_val.depth = 0.0;
@@ -1142,18 +1152,23 @@ main (int    argc,
   {
     guint i;
 
-    global.color_maps = g_new0 (guint32*, MAX_COLOR_MAPS);
-    global.color_maps[0] = g_new0 (guint32, 256);
-    global.color_maps[1] = g_new0 (guint32, 256);
-    global.color_maps[2] = g_new0 (guint32, 256);
+    global.color_maps[0] = g_array_sized_new (FALSE, FALSE, sizeof (guint32), 256);
+    global.color_maps[1] = g_array_sized_new (FALSE, FALSE, sizeof (guint32), 256);
+    global.color_maps[2] = g_array_sized_new (FALSE, FALSE, sizeof (guint32), 256);
 
     for (i = 0; i < 256; i++)
       {
         gdouble luminance = i / 255.0;
+        guint32 color;
 
-        global.color_maps[0][i] = hyscan_tile_color_converter_d2i (luminance, luminance, luminance, 1.0);
-        global.color_maps[1][i] = hyscan_tile_color_converter_d2i (luminance, luminance, 0.0, 1.0);
-        global.color_maps[2][i] = hyscan_tile_color_converter_d2i (0.0, luminance, 0.0, 1.0);
+        color = hyscan_tile_color_converter_d2i (luminance, luminance, luminance, 1.0);
+        g_array_insert_val (global.color_maps[0], i, color);
+
+        color = hyscan_tile_color_converter_d2i (luminance, luminance, 0.0, 1.0);
+        g_array_insert_val (global.color_maps[1], i, color);
+
+        color = hyscan_tile_color_converter_d2i (0.0, luminance, 0.0, 1.0);
+        g_array_insert_val (global.color_maps[2], i, color);
       }
 
     global.cur_color_map = 0;
