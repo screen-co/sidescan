@@ -290,10 +290,14 @@ color_map_set (Global *global,
 
   hyscan_gtk_waterfall_drawer_set_colormap (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
                                             HYSCAN_SOURCE_SIDE_SCAN_STARBOARD,
-                                            global->color_maps[cur_color_map], 0xff000000);
+                                            (guint32*)global->color_maps[cur_color_map]->data,
+                                            global->color_maps[cur_color_map]->len,
+                                            0xff000000);
   hyscan_gtk_waterfall_drawer_set_colormap (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
                                             HYSCAN_SOURCE_SIDE_SCAN_PORT,
-                                            global->color_maps[cur_color_map], 0xff000000);
+                                            (guint32*)global->color_maps[cur_color_map]->data,
+                                            global->color_maps[cur_color_map]->len,
+                                            0xff000000);
 
   text = g_strdup_printf ("<small><b>%s</b></small>", color_map_name);
   gtk_label_set_markup (global->color_map_value, text);
