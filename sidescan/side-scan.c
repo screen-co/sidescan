@@ -122,6 +122,7 @@ static void
 tracks_changed (HyScanDBInfo *db_info,
                 Global       *global)
 {
+  GtkTreePath *null_path;
   GtkTreeIter tree_iter;
   GHashTable *tracks;
   GHashTableIter hash_iter;
@@ -130,8 +131,11 @@ tracks_changed (HyScanDBInfo *db_info,
 
   cur_track_name = g_strdup (global->track_name);
 
-  if (gtk_tree_model_get_iter_first (global->track_list, &tree_iter))
-    while (gtk_list_store_remove (GTK_LIST_STORE (global->track_list), &tree_iter));
+  null_path = gtk_tree_path_new ();
+  gtk_tree_view_set_cursor (global->track_view, null_path, NULL, FALSE);
+  gtk_tree_path_free (null_path);
+
+  gtk_list_store_clear (GTK_LIST_STORE (global->track_list));
 
   tracks = hyscan_db_info_get_tracks (db_info);
   g_hash_table_iter_init (&hash_iter, tracks);
