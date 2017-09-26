@@ -499,13 +499,13 @@
       </packing>
     </child>
     <child>
-      <object class="GtkLabel" id="tvg_label">
+      <object class="GtkLabel" id="tvg_sensitivity_label">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">УСИЛЕНИЕ-Д</property>
+        <property name="label" translatable="yes">ЧУВСТВИТЕЛЬНОСТЬ</property>
         <property name="justify">center</property>
       </object>
       <packing>
@@ -515,14 +515,14 @@
       </packing>
     </child>
     <child>
-      <object class="GtkButton" id="tvg_down">
+      <object class="GtkButton" id="tvg_sensitivity_down">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="receives_default">True</property>
         <property name="halign">center</property>
         <property name="valign">center</property>
         <property name="image">tvg_image_down</property>
-        <signal name="clicked" handler="tvg_down" swapped="no"/>
+        <signal name="clicked" handler="tvg_sensitivity_down" swapped="no"/>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -530,14 +530,14 @@
       </packing>
     </child>
     <child>
-      <object class="GtkButton" id="tvg_up">
+      <object class="GtkButton" id="tvg_sensitivity_up">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="receives_default">True</property>
         <property name="halign">center</property>
         <property name="valign">center</property>
         <property name="image">tvg_image_up</property>
-        <signal name="clicked" handler="tvg_up" swapped="no"/>
+        <signal name="clicked" handler="tvg_sensitivity_up" swapped="no"/>
       </object>
       <packing>
         <property name="left_attach">2</property>
@@ -545,14 +545,14 @@
       </packing>
     </child>
     <child>
-      <object class="GtkLabel" id="tvg_value">
+      <object class="GtkLabel" id="tvg_sensitivity_value">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="valign">center</property>
         <property name="margin_left">6</property>
         <property name="margin_right">6</property>
         <property name="hexpand">True</property>
-        <property name="label" translatable="yes">&lt;small&gt;&lt;b&gt;20 dB&lt;/b&gt;&lt;/small&gt;</property>
+        <property name="label" translatable="yes">&lt;small&gt;&lt;b&gt;0.5&lt;/b&gt;&lt;/small&gt;</property>
         <property name="use_markup">True</property>
       </object>
       <packing>
@@ -561,7 +561,7 @@
       </packing>
     </child>
     <child>
-      <object class="GtkSeparator" id="tvg_separator">
+      <object class="GtkSeparator" id="tvg_sensitivity_separator">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="margin_top">6</property>
@@ -681,13 +681,13 @@
       </packing>
     </child>
     <child>
-      <object class="GtkLabel" id="tvg_label0">
+      <object class="GtkLabel" id="tvg_level_label">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">УСИЛЕНИЕ-0</property>
+        <property name="label" translatable="yes">УРОВЕНЬ</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -696,14 +696,14 @@
       </packing>
     </child>
     <child>
-      <object class="GtkButton" id="tvg0_down">
+      <object class="GtkButton" id="tvg_level_down">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="receives_default">True</property>
         <property name="halign">center</property>
         <property name="valign">center</property>
         <property name="image">tvg0_image_down</property>
-        <signal name="clicked" handler="tvg0_down" swapped="no"/>
+        <signal name="clicked" handler="tvg_level_down" swapped="no"/>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -711,14 +711,14 @@
       </packing>
     </child>
     <child>
-      <object class="GtkButton" id="tvg0_up">
+      <object class="GtkButton" id="tvg_level_up">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="receives_default">True</property>
         <property name="halign">center</property>
         <property name="valign">center</property>
         <property name="image">tvg0_image_up</property>
-        <signal name="clicked" handler="tvg0_up" swapped="no"/>
+        <signal name="clicked" handler="tvg_level_up" swapped="no"/>
       </object>
       <packing>
         <property name="left_attach">2</property>
@@ -726,7 +726,7 @@
       </packing>
     </child>
     <child>
-      <object class="GtkSeparator" id="tvg0_separator">
+      <object class="GtkSeparator" id="tvg_level_separator">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="margin_top">6</property>
@@ -739,14 +739,14 @@
       </packing>
     </child>
     <child>
-      <object class="GtkLabel" id="tvg0_value">
+      <object class="GtkLabel" id="tvg_level_value">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="valign">center</property>
         <property name="margin_left">6</property>
         <property name="margin_right">6</property>
         <property name="hexpand">True</property>
-        <property name="label" translatable="yes">&lt;small&gt;&lt;b&gt;0 dB&lt;/b&gt;&lt;/small&gt;</property>
+        <property name="label" translatable="yes">&lt;small&gt;&lt;b&gt;0.5&lt;/b&gt;&lt;/small&gt;</property>
         <property name="use_markup">True</property>
       </object>
       <packing>

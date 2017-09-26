@@ -48,8 +48,8 @@ typedef struct
 
     gdouble                            cur_distance;
     guint                              cur_signal;
-    gdouble                            cur_gain0;
-    gdouble                            cur_gain_step;
+    gdouble                            cur_tvg_level;
+    gdouble                            cur_tvg_sensitivity;
 
     struct
     {
@@ -68,8 +68,8 @@ typedef struct
   GtkLabel                            *scale_value;
 
   GtkLabel                            *distance_value;
-  GtkLabel                            *tvg0_value;
-  GtkLabel                            *tvg_value;
+  GtkLabel                            *tvg_level_value;
+  GtkLabel                            *tvg_sensitivity_value;
   GtkLabel                            *signal_value;
 
   GtkWidget                           *window;
@@ -399,37 +399,40 @@ signal_set (Global *global,
 /* Функция устанавливает параметры ВАРУ. */
 static gboolean
 tvg_set (Global  *global,
-         gdouble  gain0,
-         gdouble  step)
+         gdouble  level,
+         gdouble  sensitivity)
 {
   gchar *text;
   gboolean status;
   gdouble min_gain;
   gdouble max_gain;
 
+  if ((level < 0.0) || (level > 1.0) || (sensitivity < 0.0) || (sensitivity > 1.0))
+    return FALSE;
+
   hyscan_tvg_control_get_gain_range (global->sonar.tvg, HYSCAN_SOURCE_SIDE_SCAN_STARBOARD,
                                      &min_gain, &max_gain);
 
-  status = hyscan_tvg_control_set_linear_db (global->sonar.tvg,
-                                             HYSCAN_SOURCE_SIDE_SCAN_STARBOARD,
-                                             gain0, step);
+  status = hyscan_tvg_control_set_auto (global->sonar.tvg,
+                                        HYSCAN_SOURCE_SIDE_SCAN_STARBOARD,
+                                        level, sensitivity);
   if (!status)
     return FALSE;
 
   hyscan_tvg_control_get_gain_range (global->sonar.tvg, HYSCAN_SOURCE_SIDE_SCAN_PORT,
                                      &min_gain, &max_gain);
 
-  status = hyscan_tvg_control_set_linear_db (global->sonar.tvg,
-                                             HYSCAN_SOURCE_SIDE_SCAN_PORT,
-                                             gain0, step);
+  status = hyscan_tvg_control_set_auto (global->sonar.tvg,
+                                        HYSCAN_SOURCE_SIDE_SCAN_PORT,
+                                        level, sensitivity);
   if (!status)
     return FALSE;
 
-  text = g_strdup_printf ("<small><b>%.1f dB</b></small>", gain0);
-  gtk_label_set_markup (global->tvg0_value, text);
+  text = g_strdup_printf ("<small><b>%.1f</b></small>", level);
+  gtk_label_set_markup (global->tvg_level_value, text);
   g_free (text);
-  text = g_strdup_printf ("<small><b>%.1f dB</b></small>", step);
-  gtk_label_set_markup (global->tvg_value, text);
+  text = g_strdup_printf ("<small><b>%.1f</b></small>", sensitivity);
+  gtk_label_set_markup (global->tvg_sensitivity_value, text);
   g_free (text);
 
   return TRUE;
@@ -590,43 +593,51 @@ distance_down (GtkWidget *widget,
 }
 
 static void
-tvg0_up (GtkWidget *widget,
-         Global    *global)
+tvg_level_up (GtkWidget *widget,
+              Global    *global)
 {
-  gdouble cur_gain0 = global->sonar.cur_gain0 + 0.5;
+  gdouble cur_tvg_level = global->sonar.cur_tvg_level + 0.1;
 
-  if (tvg_set (global, cur_gain0, global->sonar.cur_gain_step))
-    global->sonar.cur_gain0 = cur_gain0;
+  cur_tvg_level = CLAMP (cur_tvg_level, 0.0, 1.0);
+
+  if (tvg_set (global, cur_tvg_level, global->sonar.cur_tvg_sensitivity))
+    global->sonar.cur_tvg_level = cur_tvg_level;
 }
 
 static void
-tvg0_down (GtkWidget *widget,
-           Global    *global)
+tvg_level_down (GtkWidget *widget,
+                Global    *global)
 {
-  gdouble cur_gain0 = global->sonar.cur_gain0 - 0.5;
+  gdouble cur_tvg_level = global->sonar.cur_tvg_level - 0.1;
 
-  if (tvg_set (global, cur_gain0, global->sonar.cur_gain_step))
-    global->sonar.cur_gain0 = cur_gain0;
+  cur_tvg_level = CLAMP (cur_tvg_level, 0.0, 1.0);
+
+  if (tvg_set (global, cur_tvg_level, global->sonar.cur_tvg_sensitivity))
+    global->sonar.cur_tvg_level = cur_tvg_level;
 }
 
 static void
-tvg_up (GtkWidget *widget,
-        Global    *global)
+tvg_sensitivity_up (GtkWidget *widget,
+                    Global    *global)
 {
-  gdouble cur_gain_step = global->sonar.cur_gain_step + 2.5;
+  gdouble cur_tvg_sensitivity = global->sonar.cur_tvg_sensitivity + 0.2;
 
-  if (tvg_set (global, global->sonar.cur_gain0, cur_gain_step))
-    global->sonar.cur_gain_step = cur_gain_step;
+  cur_tvg_sensitivity = CLAMP (cur_tvg_sensitivity, 0.0, 1.0);
+
+  if (tvg_set (global, global->sonar.cur_tvg_level, cur_tvg_sensitivity))
+    global->sonar.cur_tvg_sensitivity = cur_tvg_sensitivity;
 }
 
 static void
-tvg_down (GtkWidget *widget,
-          Global    *global)
+tvg_sensitivity_down (GtkWidget *widget,
+                      Global    *global)
 {
-  gdouble cur_gain_step = global->sonar.cur_gain_step - 2.5;
+  gdouble cur_tvg_sensitivity = global->sonar.cur_tvg_sensitivity - 0.2;
 
-  if (tvg_set (global, global->sonar.cur_gain0, cur_gain_step))
-    global->sonar.cur_gain_step = cur_gain_step;
+  cur_tvg_sensitivity = CLAMP (cur_tvg_sensitivity, 0.0, 1.0);
+
+  if (tvg_set (global, global->sonar.cur_tvg_level, cur_tvg_sensitivity))
+    global->sonar.cur_tvg_sensitivity = cur_tvg_sensitivity;
 }
 
 static void
@@ -665,7 +676,7 @@ start_stop (GtkWidget  *widget,
 
       /* Параметры гидролокатора. */
       if (!signal_set (global, global->sonar.cur_signal) ||
-          !tvg_set (global, global->sonar.cur_gain0, global->sonar.cur_gain_step) ||
+          !tvg_set (global, global->sonar.cur_tvg_level, global->sonar.cur_tvg_sensitivity) ||
           !distance_set (global, global->sonar.cur_distance))
         {
           gtk_switch_set_active (GTK_SWITCH (widget), FALSE);
@@ -891,6 +902,10 @@ main (int    argc,
       global.sonar.gen = HYSCAN_GENERATOR_CONTROL (global.sonar.sonar);
       global.sonar.tvg = HYSCAN_TVG_CONTROL (global.sonar.sonar);
 
+      /* Параметры локатора - только сырые данные. */
+      hyscan_param_set_enum (HYSCAN_PARAM (sonar), "/parameters/data-type", 0);
+      hyscan_param_set_double (HYSCAN_PARAM (sonar), "/parameters/auto-tvg-max-cpu", 25.0);
+
       /* Параметры генераторов. */
       gen_cap = hyscan_generator_control_get_capabilities (global.sonar.gen,
                                                            HYSCAN_SOURCE_SIDE_SCAN_STARBOARD);
@@ -931,7 +946,7 @@ main (int    argc,
       /* Параметры ВАРУ. */
       tvg_cap = hyscan_tvg_control_get_capabilities (global.sonar.tvg,
                                                      HYSCAN_SOURCE_SIDE_SCAN_STARBOARD);
-      if (!(tvg_cap | HYSCAN_TVG_MODE_LINEAR_DB))
+      if (!(tvg_cap | HYSCAN_TVG_MODE_AUTO))
         {
           g_message ("starboard: unsupported tvg mode");
           status = FALSE;
@@ -940,7 +955,7 @@ main (int    argc,
 
       tvg_cap = hyscan_tvg_control_get_capabilities (global.sonar.tvg,
                                                      HYSCAN_SOURCE_SIDE_SCAN_PORT);
-      if (!(tvg_cap | HYSCAN_TVG_MODE_LINEAR_DB))
+      if (!(tvg_cap | HYSCAN_TVG_MODE_AUTO))
         {
           g_message ("port: unsupported tvg mode");
           status = FALSE;
@@ -1050,14 +1065,14 @@ main (int    argc,
 
       global.start_stop = GTK_SWITCH (gtk_builder_get_object (builder, "start_stop"));
       global.distance_value = GTK_LABEL (gtk_builder_get_object (builder, "distance_value"));
-      global.tvg0_value = GTK_LABEL (gtk_builder_get_object (builder, "tvg0_value"));
-      global.tvg_value = GTK_LABEL (gtk_builder_get_object (builder, "tvg_value"));
+      global.tvg_level_value = GTK_LABEL (gtk_builder_get_object (builder, "tvg_level_value"));
+      global.tvg_sensitivity_value = GTK_LABEL (gtk_builder_get_object (builder, "tvg_sensitivity_value"));
       global.signal_value = GTK_LABEL (gtk_builder_get_object (builder, "signal_value"));
 
       if ((global.start_stop == NULL) ||
           (global.distance_value == NULL) ||
-          (global.tvg0_value == NULL) ||
-          (global.tvg_value == NULL) ||
+          (global.tvg_level_value == NULL) ||
+          (global.tvg_sensitivity_value == NULL) ||
           (global.signal_value == NULL))
         {
           g_message ("incorrect sonar control ui");
@@ -1104,6 +1119,10 @@ main (int    argc,
   gtk_widget_set_vexpand (GTK_WIDGET (global.wf), TRUE);
   gtk_widget_set_margin_top (GTK_WIDGET (global.wf), 12);
   gtk_widget_set_margin_bottom (GTK_WIDGET (global.wf), 12);
+
+  /* Цвет подложки. */
+  hyscan_gtk_waterfall_drawer_set_substrate (HYSCAN_GTK_WATERFALL_DRAWER (global.wf),
+                                             hyscan_tile_color_converter_d2i (0.0, 0.0, 0.0, 1.0));
 
   /* Скорость обновления экрана. */
   hyscan_gtk_waterfall_drawer_set_automove_period (HYSCAN_GTK_WATERFALL_DRAWER (global.wf), 100000);
@@ -1156,10 +1175,10 @@ main (int    argc,
 
   gtk_builder_add_callback_symbol (builder, "distance_up", G_CALLBACK (distance_up));
   gtk_builder_add_callback_symbol (builder, "distance_down", G_CALLBACK (distance_down));
-  gtk_builder_add_callback_symbol (builder, "tvg0_up", G_CALLBACK (tvg0_up));
-  gtk_builder_add_callback_symbol (builder, "tvg0_down", G_CALLBACK (tvg0_down));
-  gtk_builder_add_callback_symbol (builder, "tvg_up", G_CALLBACK (tvg_up));
-  gtk_builder_add_callback_symbol (builder, "tvg_down", G_CALLBACK (tvg_down));
+  gtk_builder_add_callback_symbol (builder, "tvg_level_up", G_CALLBACK (tvg_level_up));
+  gtk_builder_add_callback_symbol (builder, "tvg_level_down", G_CALLBACK (tvg_level_down));
+  gtk_builder_add_callback_symbol (builder, "tvg_sensitivity_up", G_CALLBACK (tvg_sensitivity_up));
+  gtk_builder_add_callback_symbol (builder, "tvg_sensitivity_down", G_CALLBACK (tvg_sensitivity_down));
   gtk_builder_add_callback_symbol (builder, "signal_up", G_CALLBACK (signal_up));
   gtk_builder_add_callback_symbol (builder, "signal_down", G_CALLBACK (signal_down));
   gtk_builder_add_callback_symbol (builder, "start_stop", G_CALLBACK (start_stop));
@@ -1168,8 +1187,8 @@ main (int    argc,
   /* Начальные значения. */
   global.cur_brightness = 20;
   global.sonar.cur_signal = 1;
-  global.sonar.cur_gain0 = 0.0;
-  global.sonar.cur_gain_step = 20.0;
+  global.sonar.cur_tvg_level = 0.5;
+  global.sonar.cur_tvg_sensitivity = 0.6;
   global.sonar.cur_distance = SIDE_SCAN_MAX_DISTANCE;
 
   /* Цветовые палитры. */
@@ -1203,7 +1222,7 @@ main (int    argc,
   if (sonar != NULL)
     {
       distance_set (&global, global.sonar.cur_distance);
-      tvg_set (&global, global.sonar.cur_gain0, global.sonar.cur_gain_step);
+      tvg_set (&global, global.sonar.cur_tvg_level, global.sonar.cur_tvg_sensitivity);
       signal_set (&global, global.sonar.cur_signal);
     }
 
