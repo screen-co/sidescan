@@ -18,6 +18,7 @@ enum
   DATE_SORT_COLUMN,
   TRACK_COLUMN,
   DATE_COLUMN,
+  HAS_RAW_DATA_COLUMN,
   N_COLUMNS
 };
 
@@ -29,6 +30,7 @@ typedef struct
   gchar                               *project_name;
   gchar                               *track_prefix;
   gchar                               *track_name;
+  gboolean                             new_track;
 
   HyScanCache                         *cache;
 
@@ -144,12 +146,20 @@ tracks_changed (HyScanDBInfo *db_info,
       HyScanTrackInfo *track_info;
       HyScanSourceInfo *starboard_info;
       HyScanSourceInfo *port_info;
+      gboolean has_computed_data;
+      gboolean has_raw_data;
 
       /* Проверяем что галс содержит данные ГБО. */
       track_info = value;
       starboard_info = g_hash_table_lookup (track_info->sources, GINT_TO_POINTER (HYSCAN_SOURCE_SIDE_SCAN_STARBOARD));
       port_info = g_hash_table_lookup (track_info->sources, GINT_TO_POINTER (HYSCAN_SOURCE_SIDE_SCAN_PORT));
-      if (!starboard_info || !starboard_info->raw || !port_info || !port_info->raw)
+      if (!starboard_info || !port_info)
+        continue;
+
+      /* Проверяем наличие обработанных и сырых данных. */
+      has_computed_data = starboard_info->computed && port_info->computed;
+      has_raw_data = starboard_info->raw && port_info->raw;
+      if (!has_computed_data && !has_raw_data)
         continue;
 
       /* Добавляем в список галсов. */
@@ -158,6 +168,7 @@ tracks_changed (HyScanDBInfo *db_info,
                           DATE_SORT_COLUMN, g_date_time_to_unix (track_info->ctime),
                           TRACK_COLUMN, g_strdup (track_info->name),
                           DATE_COLUMN, g_date_time_format (track_info->ctime, "%d/%m/%Y %H:%M"),
+                          HAS_RAW_DATA_COLUMN, has_raw_data,
                           -1);
 
       /* Подсвечиваем текущий галс. */
@@ -201,6 +212,8 @@ track_changed (GtkTreeView *list,
   GValue value = G_VALUE_INIT;
   GtkTreePath *path = NULL;
   GtkTreeIter iter;
+
+  gboolean has_raw_data;
   gchar *track_name;
 
   /* Определяем название нового галса. */
@@ -211,18 +224,23 @@ track_changed (GtkTreeView *list,
   if (!gtk_tree_model_get_iter (global->track_list, &iter, path))
     return;
 
+  gtk_tree_model_get_value (global->track_list, &iter, HAS_RAW_DATA_COLUMN, &value);
+  has_raw_data = g_value_get_boolean (&value);
+  g_value_unset (&value);
+
   gtk_tree_model_get_value (global->track_list, &iter, TRACK_COLUMN, &value);
   track_name = g_value_dup_string (&value);
   g_value_unset (&value);
 
-  /* Если названия текущего и нового галса не совпадают, открываем новый галса. */
-  if (g_strcmp0 (global->track_name, track_name) != 0)
+  /* Если создан новый галс или названия текущего и выбранного галса не совпадают, открываем этот галс. */
+  if (global->new_track || (g_strcmp0 (global->track_name, track_name) != 0))
     {
       hyscan_gtk_waterfall_close (global->wf);
       g_clear_pointer(&global->track_name, g_free);
       global->track_name = track_name;
+      global->new_track = FALSE;
 
-      hyscan_gtk_waterfall_open (global->wf, global->db, global->project_name, global->track_name, TRUE);
+      hyscan_gtk_waterfall_open (global->wf, global->db, global->project_name, global->track_name, has_raw_data);
       hyscan_gtk_waterfall_drawer_automove (HYSCAN_GTK_WATERFALL_DRAWER (global->wf), TRUE);
       scale_set (global);
     }
@@ -679,9 +697,7 @@ start_stop (GtkWidget  *widget,
           gtk_switch_set_active (global->live_view, TRUE);
           gtk_switch_set_state (GTK_SWITCH (widget), TRUE);
 
-          hyscan_gtk_waterfall_open (global->wf, global->db, global->project_name, global->track_name, TRUE);
-          hyscan_gtk_waterfall_drawer_automove (HYSCAN_GTK_WATERFALL_DRAWER (global->wf), TRUE);
-          scale_set (global);
+          global->new_track = TRUE;
         }
       else
         {

@@ -335,6 +335,8 @@
       <column type="gchararray"/>
       <!-- column-name date_view -->
       <column type="gchararray"/>
+      <!-- column-name has_raw_data -->
+      <column type="gboolean"/>
     </columns>
   </object>
   <object class="GtkAdjustment" id="track_range">
