@@ -2,8 +2,10 @@
 #include <hyscan-sonar-driver.h>
 #include <hyscan-sonar-client.h>
 #include <hyscan-sonar-control.h>
-#include <hyscan-depth-acoustic.h>
+
+#include <hyscan-gtk-waterfall.h>
 #include <hyscan-gtk-waterfall-grid.h>
+#include <hyscan-gtk-waterfall-control.h>
 #include <hyscan-tile-color.h>
 #include <hyscan-db-info.h>
 #include <hyscan-cached.h>
@@ -78,6 +80,9 @@ typedef struct
   GtkAdjustment                       *track_range;
 
   HyScanGtkWaterfall                  *wf;
+  HyScanGtkWaterfallState             *wf_state;
+  HyScanGtkWaterfallGrid              *wf_grid;
+  HyScanGtkWaterfallControl           *wf_control;
   GtkSwitch                           *live_view;
 
   GtkSwitch                           *start_stop;
@@ -235,13 +240,12 @@ track_changed (GtkTreeView *list,
   /* Если создан новый галс или названия текущего и выбранного галса не совпадают, открываем этот галс. */
   if (global->new_track || (g_strcmp0 (global->track_name, track_name) != 0))
     {
-      hyscan_gtk_waterfall_close (global->wf);
       g_clear_pointer(&global->track_name, g_free);
       global->track_name = track_name;
       global->new_track = FALSE;
 
-      hyscan_gtk_waterfall_open (global->wf, global->db, global->project_name, global->track_name, has_raw_data);
-      hyscan_gtk_waterfall_drawer_automove (HYSCAN_GTK_WATERFALL_DRAWER (global->wf), TRUE);
+      hyscan_gtk_waterfall_state_set_track (global->wf_state, global->db, global->project_name, global->track_name, has_raw_data);
+      hyscan_gtk_waterfall_automove (global->wf, TRUE);
       scale_set (global);
     }
   else
@@ -269,10 +273,7 @@ brightness_set (Global  *global,
   gamma = 1.25 - 0.5 * (cur_brightness / 100.0);
   white = 1.0 - (cur_brightness / 100.0) * 0.99;
 
-  hyscan_gtk_waterfall_drawer_set_levels (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
-                                          HYSCAN_SOURCE_SIDE_SCAN_STARBOARD, black, gamma, white);
-  hyscan_gtk_waterfall_drawer_set_levels (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
-                                          HYSCAN_SOURCE_SIDE_SCAN_PORT, black, gamma, white);
+  hyscan_gtk_waterfall_set_levels_for_all (global->wf, black, gamma, white);
 
   text = g_strdup_printf ("<small><b>%.0f%%</b></small>", cur_brightness);
   gtk_label_set_markup (global->brightness_value, text);
@@ -310,16 +311,10 @@ color_map_set (Global *global,
       return FALSE;
     }
 
-  hyscan_gtk_waterfall_drawer_set_colormap (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
-                                            HYSCAN_SOURCE_SIDE_SCAN_STARBOARD,
-                                            (guint32*)global->color_maps[cur_color_map]->data,
-                                            global->color_maps[cur_color_map]->len,
-                                            0xff000000);
-  hyscan_gtk_waterfall_drawer_set_colormap (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
-                                            HYSCAN_SOURCE_SIDE_SCAN_PORT,
-                                            (guint32*)global->color_maps[cur_color_map]->data,
-                                            global->color_maps[cur_color_map]->len,
-                                            0xff000000);
+  hyscan_gtk_waterfall_set_colormap_for_all (global->wf,
+                                             (guint32*)global->color_maps[cur_color_map]->data,
+                                             global->color_maps[cur_color_map]->len,
+                                             0xff000000);
 
   text = g_strdup_printf ("<small><b>%s</b></small>", color_map_name);
   gtk_label_set_markup (global->color_map_value, text);
@@ -337,8 +332,7 @@ scale_set (Global *global)
   gint i_scale;
   gchar *text;
 
-  i_scale = hyscan_gtk_waterfall_drawer_get_scale (HYSCAN_GTK_WATERFALL_DRAWER (global->wf),
-                                                   &scales, &n_scales);
+  i_scale = hyscan_gtk_waterfall_get_scale (global->wf, &scales, &n_scales);
 
   text = g_strdup_printf ("<small><b>1:%.0f</b></small>", scales[i_scale]);
   gtk_label_set_markup (global->scale_value, text);
@@ -528,7 +522,7 @@ static void
 scale_up (GtkWidget *widget,
           Global    *global)
 {
-  hyscan_gtk_waterfall_zoom (HYSCAN_GTK_WATERFALL (global->wf), TRUE);
+  hyscan_gtk_waterfall_control_zoom (global->wf_control, TRUE);
   scale_set (global);
 }
 
@@ -536,7 +530,7 @@ static void
 scale_down (GtkWidget *widget,
             Global    *global)
 {
-  hyscan_gtk_waterfall_zoom (HYSCAN_GTK_WATERFALL (global->wf), FALSE);
+  hyscan_gtk_waterfall_control_zoom (global->wf_control, FALSE);
   scale_set (global);
 }
 
@@ -548,14 +542,14 @@ live_view (GtkWidget  *widget,
   if (state)
     {
       if (!gtk_switch_get_state (global->live_view))
-        hyscan_gtk_waterfall_drawer_automove (HYSCAN_GTK_WATERFALL_DRAWER (global->wf), state);
+        hyscan_gtk_waterfall_automove (global->wf, state);
 
       gtk_switch_set_state (global->live_view, TRUE);
     }
   else
     {
       if (gtk_switch_get_state (global->live_view))
-        hyscan_gtk_waterfall_drawer_automove (HYSCAN_GTK_WATERFALL_DRAWER (global->wf), state);
+        hyscan_gtk_waterfall_automove (global->wf, state);
 
       gtk_switch_set_state (global->live_view, FALSE);
     }
@@ -671,7 +665,7 @@ start_stop (GtkWidget  *widget,
       gboolean status;
 
       /* Закрываем текущий открытый галс. */
-      hyscan_gtk_waterfall_close (global->wf);
+      hyscan_gtk_waterfall_state_set_track (global->wf_state, NULL, NULL, NULL, FALSE);
       g_clear_pointer(&global->track_name, g_free);
 
       /* Параметры гидролокатора. */
@@ -1113,8 +1107,12 @@ main (int    argc,
   container = hyscan_gtk_area_new ();
 
   /* Объект "водопад". */
-  global.wf = HYSCAN_GTK_WATERFALL (hyscan_gtk_waterfall_grid_new ());
-  hyscan_gtk_waterfall_set_cache (global.wf, global.cache, global.cache, NULL);
+  global.wf = HYSCAN_GTK_WATERFALL (hyscan_gtk_waterfall_new ());
+  global.wf_state = HYSCAN_GTK_WATERFALL_STATE (global.wf);
+  global.wf_grid = hyscan_gtk_waterfall_grid_new (global.wf);
+  global.wf_control = hyscan_gtk_waterfall_control_new (global.wf);
+
+  hyscan_gtk_waterfall_state_set_cache (global.wf_state, global.cache, global.cache, NULL);
   gtk_widget_set_hexpand (GTK_WIDGET (global.wf), TRUE);
   gtk_widget_set_vexpand (GTK_WIDGET (global.wf), TRUE);
   gtk_widget_set_margin_top (GTK_WIDGET (global.wf), 12);
@@ -1125,16 +1123,16 @@ main (int    argc,
                                              hyscan_tile_color_converter_d2i (0.0, 0.0, 0.0, 1.0));
 
   /* Скорость обновления экрана. */
-  hyscan_gtk_waterfall_drawer_set_automove_period (HYSCAN_GTK_WATERFALL_DRAWER (global.wf), 100000);
-  hyscan_gtk_waterfall_drawer_set_regeneration_period (HYSCAN_GTK_WATERFALL_DRAWER (global.wf), 500000);
+  hyscan_gtk_waterfall_set_automove_period (global.wf, 100000);
+  hyscan_gtk_waterfall_set_regeneration_period (global.wf, 500000);
 
   /* Устанавливаем скорости движения судна и скорость звука в воде. */
   svp = g_array_new (FALSE, FALSE, sizeof (HyScanSoundVelocity));
   svp_val.depth = 0.0;
   svp_val.velocity = sound_velocity;
   g_array_insert_val (svp, 0, svp_val);
-  hyscan_gtk_waterfall_set_ship_speed (global.wf, ship_speed);
-  hyscan_gtk_waterfall_set_sound_velocity (global.wf, svp);
+  hyscan_gtk_waterfall_state_set_ship_speed (global.wf_state, ship_speed);
+  hyscan_gtk_waterfall_state_set_sound_velocity (global.wf_state, svp);
   g_array_unref (svp);
 
   /* Основное окно программы. */
@@ -1242,6 +1240,10 @@ exit:
   g_clear_object (&global.cache);
   g_clear_object (&global.db_info);
   g_clear_object (&global.db);
+
+  g_clear_object (&global.wf);
+  g_clear_object (&global.wf_grid);
+  g_clear_object (&global.wf_control);
 
   g_clear_pointer (&global.sonar.starboard.signals, hyscan_data_schema_free_enum_values);
   g_clear_pointer (&global.sonar.port.signals, hyscan_data_schema_free_enum_values);
