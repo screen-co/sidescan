@@ -1119,8 +1119,8 @@ main (int    argc,
   gtk_widget_set_margin_bottom (GTK_WIDGET (global.wf), 12);
 
   /* Цвет подложки. */
-  hyscan_gtk_waterfall_drawer_set_substrate (HYSCAN_GTK_WATERFALL_DRAWER (global.wf),
-                                             hyscan_tile_color_converter_d2i (0.0, 0.0, 0.0, 1.0));
+  hyscan_gtk_waterfall_set_substrate (HYSCAN_GTK_WATERFALL (global.wf),
+                                      hyscan_tile_color_converter_d2i (0.0, 0.0, 0.0, 1.0));
 
   /* Скорость обновления экрана. */
   hyscan_gtk_waterfall_set_automove_period (global.wf, 100000);
