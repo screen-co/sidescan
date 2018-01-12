@@ -1111,6 +1111,7 @@ main (int    argc,
   global.wf_state = HYSCAN_GTK_WATERFALL_STATE (global.wf);
   global.wf_grid = hyscan_gtk_waterfall_grid_new (global.wf);
   global.wf_control = hyscan_gtk_waterfall_control_new (global.wf);
+  hyscan_gtk_waterfall_control_set_wheel_behaviour (global.wf_control, TRUE);
 
   hyscan_gtk_waterfall_state_set_cache (global.wf_state, global.cache, global.cache, NULL);
   gtk_widget_set_hexpand (GTK_WIDGET (global.wf), TRUE);
