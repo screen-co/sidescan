@@ -89,6 +89,7 @@ typedef struct
   GtkSwitch                           *live_view;
 
   GtkSwitch                           *start_stop;
+  GtkSwitch                           *start_stop_dry;
 
 } Global;
 
@@ -344,25 +345,6 @@ scale_set (Global *global)
   text = g_strdup_printf ("<small><b>1:%.0f</b></small>", scales[i_scale]);
   gtk_label_set_markup (global->scale_value, text);
   g_free (text);
-
-  return TRUE;
-}
-
-/* Функция включает/выключает излучение. */
-static gboolean
-sounding (GtkWidget *widget,
-          gboolean   state,
-          Global    *global)
-{
-  global->power = state;
-  
-  if (global->sonar.gen != NULL)
-    {
-      hyscan_generator_control_set_enable (global->sonar.gen, HYSCAN_SOURCE_SIDE_SCAN_STARBOARD, state);
-      hyscan_generator_control_set_enable (global->sonar.gen, HYSCAN_SOURCE_SIDE_SCAN_PORT, state);
-    }
-  
-  gtk_switch_set_state (GTK_SWITCH (widget), state);
 
   return TRUE;
 }
@@ -681,6 +663,23 @@ signal_down (GtkWidget *widget,
 }
 
 static gboolean
+start_stop_disabler (GtkSwitch *sw,
+                     gboolean   state,
+                     Global    *global)
+{
+  GtkSwitch *other;
+
+  if (sw == global->start_stop)
+    other = global->start_stop_dry;
+  else
+    other = global->start_stop;
+
+  gtk_widget_set_sensitive (GTK_WIDGET (other), !state);
+
+  return FALSE;
+}
+
+static gboolean
 start_stop (GtkWidget  *widget,
             gboolean    state,
             Global     *global)
@@ -750,6 +749,27 @@ start_stop (GtkWidget  *widget,
           gtk_widget_set_sensitive (GTK_WIDGET (global->track_view), TRUE);
         }
     }
+
+  return TRUE;
+}
+
+/* Функция включает/выключает сухую поверку. */
+static gboolean
+start_stop_dry (GtkWidget *widget,
+                gboolean   state,
+                Global    *global)
+{
+  global->power = !state;
+  
+  if (global->sonar.gen != NULL)
+    {
+      hyscan_generator_control_set_enable (global->sonar.gen, HYSCAN_SOURCE_SIDE_SCAN_STARBOARD, global->power);
+      hyscan_generator_control_set_enable (global->sonar.gen, HYSCAN_SOURCE_SIDE_SCAN_PORT, global->power);
+    }
+  
+  start_stop (widget, state, global);
+
+  gtk_switch_set_state (GTK_SWITCH (widget), state);
 
   return TRUE;
 }
@@ -967,25 +987,6 @@ main (int    argc,
           goto exit;
         }
 
-      /* Тут же отключаем. */
-      status = hyscan_generator_control_set_enable (global.sonar.gen,
-                                                    HYSCAN_SOURCE_SIDE_SCAN_STARBOARD,
-                                                    FALSE);
-      if (!status)
-        {
-          g_message ("starboard: can't disable generator");
-          goto exit;
-        }
-
-      status = hyscan_generator_control_set_enable (global.sonar.gen,
-                                                    HYSCAN_SOURCE_SIDE_SCAN_PORT,
-                                                    FALSE);
-      if (!status)
-        {
-          g_message ("port: can't disable generator");
-          goto exit;
-        }
-
       /* Параметры ВАРУ. */
       tvg_cap = hyscan_tvg_control_get_capabilities (global.sonar.tvg,
                                                      HYSCAN_SOURCE_SIDE_SCAN_STARBOARD);
@@ -1107,6 +1108,10 @@ main (int    argc,
         }
 
       global.start_stop = GTK_SWITCH (gtk_builder_get_object (builder, "start_stop"));
+      global.start_stop_dry = GTK_SWITCH (gtk_builder_get_object (builder, "start_stop_dry"));
+      g_signal_connect (global.start_stop, "state-set", G_CALLBACK (start_stop_disabler), &global);
+      g_signal_connect (global.start_stop_dry, "state-set", G_CALLBACK (start_stop_disabler), &global);
+             
       global.distance_value = GTK_LABEL (gtk_builder_get_object (builder, "distance_value"));
       global.tvg_level_value = GTK_LABEL (gtk_builder_get_object (builder, "tvg_level_value"));
       global.tvg_sensitivity_value = GTK_LABEL (gtk_builder_get_object (builder, "tvg_sensitivity_value"));
@@ -1230,7 +1235,7 @@ main (int    argc,
   gtk_builder_add_callback_symbol (builder, "signal_up", G_CALLBACK (signal_up));
   gtk_builder_add_callback_symbol (builder, "signal_down", G_CALLBACK (signal_down));
   gtk_builder_add_callback_symbol (builder, "start_stop", G_CALLBACK (start_stop));
-  gtk_builder_add_callback_symbol (builder, "sounding", G_CALLBACK (sounding));
+  gtk_builder_add_callback_symbol (builder, "start_stop_dry", G_CALLBACK (start_stop_dry));
   gtk_builder_connect_signals (builder, &global);
 
   /* Начальные значения. */
@@ -1274,11 +1279,6 @@ main (int    argc,
       tvg_set (&global, global.sonar.cur_tvg_level, global.sonar.cur_tvg_sensitivity);
       signal_set (&global, global.sonar.cur_signal);
     }
-
-  {
-    GObject *sounding = gtk_builder_get_object (builder, "sounding_switch");
-    gtk_switch_set_active (GTK_SWITCH (sounding), FALSE);
-  }
 
   if (full_screen)
     gtk_window_fullscreen (GTK_WINDOW (global.window));

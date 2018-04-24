@@ -5,42 +5,42 @@
   <object class="GtkImage" id="brightness_image_down">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-out</property>
+    <property name="icon_name">list-remove-symbolic</property>
   </object>
   <object class="GtkImage" id="brightness_image_up">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-in</property>
+    <property name="icon_name">list-add-symbolic</property>
   </object>
   <object class="GtkImage" id="color_map_image_down">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-out</property>
+    <property name="icon_name">list-remove-symbolic</property>
   </object>
   <object class="GtkImage" id="color_map_image_up">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-in</property>
+    <property name="icon_name">list-add-symbolic</property>
   </object>
   <object class="GtkImage" id="distance_image_down">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-out</property>
+    <property name="icon_name">list-remove-symbolic</property>
   </object>
   <object class="GtkImage" id="distance_image_up">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-in</property>
+    <property name="icon_name">list-add-symbolic</property>
   </object>
   <object class="GtkImage" id="scale_image_down">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-out</property>
+    <property name="icon_name">list-remove-symbolic</property>
   </object>
   <object class="GtkImage" id="scale_image_up">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-in</property>
+    <property name="icon_name">list-add-symbolic</property>
   </object>
   <object class="GtkGrid" id="view_control">
     <property name="visible">True</property>
@@ -320,12 +320,12 @@
   <object class="GtkImage" id="signal_image_down">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-out</property>
+    <property name="icon_name">list-remove-symbolic</property>
   </object>
   <object class="GtkImage" id="signal_image_up">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-in</property>
+    <property name="icon_name">list-add-symbolic</property>
   </object>
   <object class="GtkListStore" id="track_list">
     <columns>
@@ -398,22 +398,22 @@
   <object class="GtkImage" id="tvg0_image_down">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-out</property>
+    <property name="icon_name">list-remove-symbolic</property>
   </object>
   <object class="GtkImage" id="tvg0_image_up">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-in</property>
+    <property name="icon_name">list-add-symbolic</property>
   </object>
   <object class="GtkImage" id="tvg_image_down">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-out</property>
+    <property name="icon_name">list-remove-symbolic</property>
   </object>
   <object class="GtkImage" id="tvg_image_up">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
-    <property name="stock">gtk-zoom-in</property>
+    <property name="icon_name">list-add-symbolic</property>
   </object>
   <object class="GtkGrid" id="sonar_control">
     <property name="visible">True</property>
@@ -761,7 +761,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">ИЗЛУЧЕНИЕ</property>
+        <property name="label" translatable="yes">СУХАЯ ПОВЕРКА</property>
         <property name="justify">center</property>
       </object>
       <packing>
@@ -771,12 +771,12 @@
       </packing>
     </child>
     <child>
-      <object class="GtkSwitch" id="sounding_switch">
+      <object class="GtkSwitch" id="start_stop_dry">
         <property name="visible">True</property>
         <property name="can_focus">True</property>
         <property name="halign">center</property>
         <property name="valign">center</property>
-        <signal name="state-set" handler="sounding" swapped="no"/>
+        <signal name="state-set" handler="start_stop_dry" swapped="no"/>
       </object>
       <packing>
         <property name="left_attach">0</property>
