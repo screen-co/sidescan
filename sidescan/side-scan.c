@@ -6,6 +6,11 @@
 #include <hyscan-gtk-waterfall.h>
 #include <hyscan-gtk-waterfall-grid.h>
 #include <hyscan-gtk-waterfall-control.h>
+#include <hyscan-gtk-waterfall-mark.h>
+#include <hyscan-gtk-waterfall-meter.h>
+#include <hyscan-gtk-project-viewer.h>
+#include <hyscan-mark-manager.h>
+#include <hyscan-gtk-mark-editor.h>
 #include <hyscan-tile-color.h>
 #include <hyscan-db-info.h>
 #include <hyscan-cached.h>
@@ -86,10 +91,16 @@ typedef struct
   HyScanGtkWaterfallState             *wf_state;
   HyScanGtkWaterfallGrid              *wf_grid;
   HyScanGtkWaterfallControl           *wf_control;
+  HyScanGtkWaterfallMark              *wf_mark;
+  HyScanGtkWaterfallMeter             *wf_meter;
   GtkSwitch                           *live_view;
 
   GtkSwitch                           *start_stop;
   GtkSwitch                           *start_stop_dry;
+
+  HyScanMarkManager                   *mman;
+  GtkWidget                           *mlist;
+  GtkWidget                           *meditor;
 
 } Global;
 
@@ -163,10 +174,6 @@ tracks_changed (HyScanDBInfo *db_info,
       starboard_info = g_hash_table_lookup (track_info->sources, GINT_TO_POINTER (HYSCAN_SOURCE_SIDE_SCAN_STARBOARD));
       port_info = g_hash_table_lookup (track_info->sources, GINT_TO_POINTER (HYSCAN_SOURCE_SIDE_SCAN_PORT));
       if (!starboard_info || !port_info)
-        continue;
-
-      /* Пропускаем сухие галсы, если излучение включено. */
-      if (global->power && g_str_has_suffix (track_info->name, DRY_TRACK_SUFFIX))
         continue;
 
       /* Проверяем наличие обработанных и сырых данных. */
@@ -260,6 +267,117 @@ track_changed (GtkTreeView *list,
     {
       g_free (track_name);
     }
+}
+
+
+static void
+active_mark_changed (HyScanGtkProjectViewer *marks_viewer,
+                     Global                 *global)
+{
+  const gchar *mark_id;
+  GHashTable *marks;
+  HyScanMarkManagerMarkLoc *mark;
+
+  mark_id = hyscan_gtk_project_viewer_get_selected_item (marks_viewer);
+  // hyscan_db_model_set_mark (priv->db_model, mark_id);
+
+  if ((marks = hyscan_mark_manager_get_w_coords (global->mman)) == NULL)
+    return;
+
+  if ((mark = g_hash_table_lookup (marks, mark_id)) != NULL)
+    {
+      hyscan_gtk_mark_editor_set_mark (HYSCAN_GTK_MARK_EDITOR (global->meditor),
+                                       mark_id,
+                                       mark->mark->name,
+                                       mark->mark->operator_name,
+                                       mark->mark->description,
+                                       mark->lat,
+                                       mark->lon);
+    }
+
+  g_hash_table_unref (marks);
+}
+
+static void
+mark_manager_changed (HyScanMarkManager *mark_manager,
+                      Global            *global)
+{
+  GtkTreeIter tree_iter;
+  GHashTable *marks;
+  GHashTableIter marks_iter;
+  gpointer key, value;
+  const gchar *mark_id;
+  GtkListStore *ls;
+
+  hyscan_gtk_project_viewer_clear (HYSCAN_GTK_PROJECT_VIEWER (global->mlist));
+
+  if ((marks = hyscan_mark_manager_get_w_coords (mark_manager)) == NULL)
+    return;
+
+  ls = hyscan_gtk_project_viewer_get_liststore (HYSCAN_GTK_PROJECT_VIEWER (global->mlist));
+
+  g_hash_table_iter_init (&marks_iter, marks);
+  while (g_hash_table_iter_next (&marks_iter, &key, &value))
+    {
+      mark_id = key;
+      HyScanMarkManagerMarkLoc *mark = value;
+      GDateTime *mtime;
+      gchar *mtime_str;
+
+      mtime = g_date_time_new_from_unix_local (mark->mark->modification_time / 1e6);
+      mtime_str =  g_date_time_format (mtime, "%d.%m %H:%M");
+
+      gtk_list_store_append (ls, &tree_iter);
+      gtk_list_store_set (ls, &tree_iter,
+                          0, mark_id,
+                          1, mark->mark->name,
+                          2, mtime_str,
+                          3, mark->mark->modification_time,
+                          -1);
+
+      g_free (mtime_str);
+      g_date_time_unref (mtime);
+    }
+
+  g_hash_table_unref (marks);
+
+  // if ((mark_id = hyscan_db_model_get_mark (priv->db_model)) != NULL)
+    // hyscan_gtk_project_viewer_set_selected_item (HYSCAN_GTK_PROJECT_VIEWER (global->mlist), mark_id);
+}
+
+static void
+mark_modified (HyScanGtkMarkEditor *med,
+               Global              *global)
+{
+  gchar *mark_id = NULL;
+  GHashTable *marks;
+  HyScanWaterfallMark *mark;
+
+  hyscan_gtk_mark_editor_get_mark (med, &mark_id, NULL, NULL, NULL);
+
+  if ((marks = hyscan_mark_manager_get (global->mman)) == NULL)
+    return;
+
+  if ((mark = g_hash_table_lookup (marks, mark_id)) != NULL)
+    {
+      HyScanWaterfallMark *modified_mark = hyscan_waterfall_mark_copy (mark);
+      g_clear_pointer (&modified_mark->name, g_free);
+      g_clear_pointer (&modified_mark->operator_name, g_free);
+      g_clear_pointer (&modified_mark->description, g_free);
+
+      hyscan_gtk_mark_editor_get_mark (med,
+                                       NULL,
+                                       &modified_mark->name,
+                                       &modified_mark->operator_name,
+                                       &modified_mark->description);
+
+      hyscan_mark_manager_modify_mark (global->mman, mark_id, modified_mark);
+
+      hyscan_waterfall_mark_free (modified_mark);
+    }
+
+  g_free (mark_id);
+  g_hash_table_unref (marks);
 }
 
 /* Функция устанавливает яркость отображения. */
@@ -721,7 +839,7 @@ start_stop (GtkWidget  *widget,
         }
 
       /* Включаем запись нового галса. */
-      global->track_name = g_strdup_printf ("%s%d%s", global->track_prefix, ++n_tracks, global->power ? "" : DRY_TRACK_SUFFIX);
+      global->track_name = g_strdup_printf ("%s%d%s", global->track_prefix, ++n_tracks + 1, global->power ? "" : DRY_TRACK_SUFFIX);
       status = hyscan_sonar_control_start (global->sonar.sonar, global->track_name, HYSCAN_TRACK_SURVEY);
 
       /* Если локатор включён, открываем галс и переходим в режим онлайн. */
@@ -760,13 +878,13 @@ start_stop_dry (GtkWidget *widget,
                 Global    *global)
 {
   global->power = !state;
-  
+
   if (global->sonar.gen != NULL)
     {
       hyscan_generator_control_set_enable (global->sonar.gen, HYSCAN_SOURCE_SIDE_SCAN_STARBOARD, global->power);
       hyscan_generator_control_set_enable (global->sonar.gen, HYSCAN_SOURCE_SIDE_SCAN_PORT, global->power);
     }
-  
+
   start_stop (widget, state, global);
 
   gtk_switch_set_state (GTK_SWITCH (widget), state);
@@ -775,6 +893,70 @@ start_stop_dry (GtkWidget *widget,
 }
 
 Global global = {0};
+
+GtkWidget*
+make_layer_btn (HyScanGtkWaterfallLayer *layer,
+                GtkWidget               *from)
+{
+  GtkWidget *button;
+  const gchar *icon;
+
+  icon = hyscan_gtk_waterfall_layer_get_mnemonic (layer);
+  button = gtk_radio_button_new_from_widget (GTK_RADIO_BUTTON (from));
+
+  gtk_toggle_button_set_mode (GTK_TOGGLE_BUTTON (button), FALSE);
+  gtk_button_set_image (GTK_BUTTON (button),
+                        gtk_image_new_from_icon_name (icon, GTK_ICON_SIZE_BUTTON));
+
+  g_signal_connect_swapped (button, "clicked",
+                            G_CALLBACK (hyscan_gtk_waterfall_layer_grab_input),
+                            layer);
+
+  return button;
+}
+
+GtkWidget *
+make_overlay (HyScanGtkWaterfall          *wf,
+              HyScanGtkWaterfallGrid     **_grid,
+              HyScanGtkWaterfallControl  **_ctrl,
+              HyScanGtkWaterfallMark     **_mark,
+              HyScanGtkWaterfallMeter    **_meter)
+{
+  HyScanGtkWaterfallGrid *grid = hyscan_gtk_waterfall_grid_new (wf);
+  HyScanGtkWaterfallControl *ctrl = hyscan_gtk_waterfall_control_new (wf);
+  HyScanGtkWaterfallMark *mark = hyscan_gtk_waterfall_mark_new (wf);
+  HyScanGtkWaterfallMeter *meter = hyscan_gtk_waterfall_meter_new (wf);
+  GtkWidget *overlay = gtk_overlay_new ();
+  GtkWidget *lay_ctrl = make_layer_btn (HYSCAN_GTK_WATERFALL_LAYER (ctrl), NULL);
+  GtkWidget *lay_mark = make_layer_btn (HYSCAN_GTK_WATERFALL_LAYER (mark), lay_ctrl);
+  GtkWidget *lay_metr = make_layer_btn (HYSCAN_GTK_WATERFALL_LAYER (meter), lay_mark);
+  GtkWidget *lay_box = gtk_box_new (GTK_ORIENTATION_HORIZONTAL, 0);
+
+  hyscan_gtk_waterfall_control_set_wheel_behaviour (ctrl, TRUE);
+  gtk_style_context_add_class (gtk_widget_get_style_context (lay_box), "linked");
+
+  gtk_box_pack_start (GTK_BOX (lay_box), lay_ctrl, FALSE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (lay_box), lay_mark, FALSE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (lay_box), lay_metr, FALSE, TRUE, 0);
+
+  gtk_container_add (GTK_CONTAINER (overlay), GTK_WIDGET (wf));
+  gtk_overlay_add_overlay (GTK_OVERLAY (overlay), lay_box);
+
+  gtk_widget_set_halign (lay_box, GTK_ALIGN_CENTER);
+  gtk_widget_set_valign (lay_box, GTK_ALIGN_END);
+  gtk_widget_set_margin_bottom (lay_box, 12);
+
+  if (_grid != NULL)
+    *_grid = grid;
+  if (_ctrl != NULL)
+    *_ctrl = ctrl;
+  if (_mark != NULL)
+    *_mark = mark;
+  if (_meter != NULL)
+    *_meter = meter;
+
+  return overlay;
+}
 
 int
 main (int    argc,
@@ -981,6 +1163,7 @@ main (int    argc,
       status = hyscan_generator_control_set_enable (global.sonar.gen,
                                                     HYSCAN_SOURCE_SIDE_SCAN_PORT,
                                                     TRUE);
+      global.power = TRUE;
       if (!status)
         {
           g_message ("port: can't enable generator");
@@ -1111,7 +1294,7 @@ main (int    argc,
       global.start_stop_dry = GTK_SWITCH (gtk_builder_get_object (builder, "start_stop_dry"));
       g_signal_connect (global.start_stop, "state-set", G_CALLBACK (start_stop_disabler), &global);
       g_signal_connect (global.start_stop_dry, "state-set", G_CALLBACK (start_stop_disabler), &global);
-             
+
       global.distance_value = GTK_LABEL (gtk_builder_get_object (builder, "distance_value"));
       global.tvg_level_value = GTK_LABEL (gtk_builder_get_object (builder, "tvg_level_value"));
       global.tvg_sensitivity_value = GTK_LABEL (gtk_builder_get_object (builder, "tvg_sensitivity_value"));
@@ -1150,6 +1333,31 @@ main (int    argc,
   /* Сортировка списка галсов. */
   gtk_tree_sortable_set_sort_column_id (GTK_TREE_SORTABLE (global.track_list), 0, GTK_SORT_DESCENDING);
 
+  global.mman = hyscan_mark_manager_new ();
+  global.mlist = hyscan_gtk_project_viewer_new ();
+  global.meditor = hyscan_gtk_mark_editor_new ();
+
+
+  hyscan_mark_manager_set_project (global.mman, global.db, global.project_name);
+
+  g_signal_connect (global.mman, "changed", G_CALLBACK (mark_manager_changed), &global);
+  g_signal_connect (global.meditor, "mark-modified", G_CALLBACK (mark_modified), &global);
+  g_signal_connect (global.mlist, "item-changed", G_CALLBACK (active_mark_changed), &global);
+
+  g_object_set (track_control, "vexpand", TRUE, "valign", GTK_ALIGN_FILL,
+                               "hexpand", FALSE, "halign", GTK_ALIGN_FILL, NULL);
+  g_object_set (global.mlist, "vexpand", TRUE, "valign", GTK_ALIGN_FILL,
+                           "hexpand", FALSE, "halign", GTK_ALIGN_FILL, NULL);
+  g_object_set (global.meditor, "vexpand", FALSE, "valign", GTK_ALIGN_END,
+                              "hexpand", FALSE, "halign", GTK_ALIGN_FILL,
+                              "margin-top", 6, "margin-bottom", 6, NULL);
+
+  GtkWidget * left_box = gtk_box_new (GTK_ORIENTATION_VERTICAL, 2);
+  gtk_box_pack_start (GTK_BOX (left_box), track_control, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (left_box), global.mlist, TRUE, TRUE, 0);
+  gtk_box_pack_start (GTK_BOX (left_box), global.meditor, FALSE, FALSE, 0);
+
+
   /* Область управления. */
   control = gtk_box_new (GTK_ORIENTATION_VERTICAL, 0);
   gtk_widget_set_hexpand (control, FALSE);
@@ -1162,10 +1370,13 @@ main (int    argc,
 
   /* Объект "водопад". */
   global.wf = HYSCAN_GTK_WATERFALL (hyscan_gtk_waterfall_new ());
+  GtkWidget *overlay = make_overlay (global.wf,
+                                     &global.wf_grid,
+                                     &global.wf_control,
+                                     &global.wf_mark,
+                                     &global.wf_meter);
+
   global.wf_state = HYSCAN_GTK_WATERFALL_STATE (global.wf);
-  global.wf_grid = hyscan_gtk_waterfall_grid_new (global.wf);
-  global.wf_control = hyscan_gtk_waterfall_control_new (global.wf);
-  hyscan_gtk_waterfall_control_set_wheel_behaviour (global.wf_control, TRUE);
 
   hyscan_gtk_waterfall_state_set_cache (global.wf_state, global.cache, global.cache, NULL);
   gtk_widget_set_hexpand (GTK_WIDGET (global.wf), TRUE);
@@ -1202,8 +1413,8 @@ main (int    argc,
   gtk_window_set_titlebar (GTK_WINDOW (global.window), header);
 
   /* Разметка экрана. */
-  hyscan_gtk_area_set_central (HYSCAN_GTK_AREA (container), GTK_WIDGET (global.wf));
-  hyscan_gtk_area_set_left (HYSCAN_GTK_AREA (container), track_control);
+  hyscan_gtk_area_set_central (HYSCAN_GTK_AREA (container), GTK_WIDGET (overlay));
+  hyscan_gtk_area_set_left (HYSCAN_GTK_AREA (container), left_box);
   hyscan_gtk_area_set_right (HYSCAN_GTK_AREA (container), control);
   gtk_container_add (GTK_CONTAINER (global.window), container);
 

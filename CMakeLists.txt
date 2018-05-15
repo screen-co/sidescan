@@ -61,6 +61,7 @@ else ()
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancontrol/hyscancontrol")
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmodel/hyscanmodel")
   include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscangui/hyscangui")
+  include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscangtk/hyscangtk")
 
   link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../gtkcifroarea/bin")
   link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscantypes/bin")
@@ -70,6 +71,7 @@ else ()
   link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancore/bin")
   link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscancontrol/bin")
   link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscanmodel/bin")
+  link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscangtk/bin")
   link_directories ("${CMAKE_CURRENT_SOURCE_DIR}/../libhyscangui/bin")
 
   set (HYSCAN_LIBRARIES "hyscantypes-${HYSCAN_MAJOR_VERSION}"
@@ -79,10 +81,9 @@ else ()
                         "hyscancore-${HYSCAN_MAJOR_VERSION}"
                         "hyscancontrol-${HYSCAN_MAJOR_VERSION}"
                         "hyscanmodel-${HYSCAN_MAJOR_VERSION}"
+                        "hyscangtk-${HYSCAN_MAJOR_VERSION}"
                         "hyscangui-${HYSCAN_MAJOR_VERSION}")
 endif ()
-
-include_directories ("${CMAKE_CURRENT_SOURCE_DIR}/hyscansonar")
 
 add_definitions (-DG_LOG_DOMAIN="SideScan")
 add_subdirectory (sidescan)
