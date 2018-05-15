@@ -56,7 +56,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">ЯРКОСТЬ</property>
+        <property name="label" translatable="yes">Яркость</property>
         <property name="use_markup">True</property>
         <property name="justify">center</property>
       </object>
@@ -133,7 +133,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">МАСШТАБ</property>
+        <property name="label" translatable="yes">Масштаб</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -207,7 +207,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">АВТОПРОСМОТР</property>
+        <property name="label" translatable="yes">Автопросмотр</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -249,7 +249,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">ПАЛИТРА</property>
+        <property name="label" translatable="yes">Палитра</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -308,7 +308,7 @@
         <property name="margin_left">6</property>
         <property name="margin_right">6</property>
         <property name="hexpand">True</property>
-        <property name="label" translatable="yes">&lt;small&gt;&lt;b&gt;ЖЁЛТАЯ&lt;/b&gt;&lt;/small&gt;</property>
+        <property name="label" translatable="yes">&lt;small&gt;&lt;b&gt;Жёлтая&lt;/b&gt;&lt;/small&gt;</property>
         <property name="use_markup">True</property>
       </object>
       <packing>
@@ -429,7 +429,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">ДИСТАНЦИЯ</property>
+        <property name="label" translatable="yes">Дистанция</property>
         <property name="justify">center</property>
       </object>
       <packing>
@@ -505,7 +505,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">ЧУВСТВИТЕЛЬНОСТЬ</property>
+        <property name="label" translatable="yes">Чувствительность</property>
         <property name="justify">center</property>
       </object>
       <packing>
@@ -580,7 +580,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">СИГНАЛ</property>
+        <property name="label" translatable="yes">Сигнал</property>
         <property name="justify">center</property>
       </object>
       <packing>
@@ -657,7 +657,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">РАБОТА</property>
+        <property name="label" translatable="yes">Работа</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -687,7 +687,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">УРОВЕНЬ</property>
+        <property name="label" translatable="yes">Уровень</property>
       </object>
       <packing>
         <property name="left_attach">0</property>
@@ -761,7 +761,7 @@
         <property name="halign">start</property>
         <property name="valign">center</property>
         <property name="margin_bottom">6</property>
-        <property name="label" translatable="yes">СУХАЯ ПОВЕРКА</property>
+        <property name="label" translatable="yes">Сухая поверка</property>
         <property name="justify">center</property>
       </object>
       <packing>
