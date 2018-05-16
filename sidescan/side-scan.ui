@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.12"/>
   <object class="GtkImage" id="brightness_image_down">
@@ -347,7 +347,6 @@
   <object class="GtkScrolledWindow" id="track_control">
     <property name="visible">True</property>
     <property name="can_focus">True</property>
-    <property name="margin_right">12</property>
     <property name="margin_top">12</property>
     <property name="margin_bottom">12</property>
     <property name="vadjustment">track_range</property>
